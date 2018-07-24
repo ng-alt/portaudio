@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: pa_unix_util.c 1419 2009-10-22 17:28:35Z bjornroche $
  * Portable Audio I/O Library
  * UNIX platform-specific support functions
  *
@@ -194,8 +194,10 @@ PaError PaUtil_CancelThreading( PaUtilThreading *threading, int wait, PaError *e
         *exitResult = paNoError;
 
     /* Only kill the thread if it isn't in the process of stopping (flushing adaptation buffers) */
+#if !PJ_ANDROID
     if( !wait )
         pthread_cancel( threading->callbackThread );   /* XXX: Safe to call this if the thread has exited on its own? */
+#endif
     pthread_join( threading->callbackThread, &pret );
 
 #ifdef PTHREAD_CANCELED
@@ -427,12 +429,21 @@ PaError PaUnixThread_Terminate( PaUnixThread* self, int wait, PaError* exitResul
     {
         PA_DEBUG(( "%s: Canceling thread %d\n", __FUNCTION__, self->thread ));
         /* XXX: Safe to call this if the thread has exited on its own? */
+#if !PJ_ANDROID
         pthread_cancel( self->thread );
+#endif
     }
     PA_DEBUG(( "%s: Joining thread %d\n", __FUNCTION__, self->thread ));
     PA_ENSURE_SYSTEM( pthread_join( self->thread, &pret ), 0 );
 
-    if( pret && PTHREAD_CANCELED != pret )
+ //   if( pret && PTHREAD_CANCELED != pret )
+#ifdef PTHREAD_CANCELED
+	    if( pret && PTHREAD_CANCELED != pret )
+#else
+		       /* !wait means the thread may have been canceled */
+		       if( pret && wait )
+#endif
+
     {
         if( exitResult )
         {
@@ -507,8 +518,9 @@ PaError PaUnixMutex_Lock( PaUnixMutex* self )
 {
     PaError result = paNoError;
     int oldState;
-    
+#if !PJ_ANDROID 
     PA_ENSURE_SYSTEM( pthread_setcancelstate( PTHREAD_CANCEL_DISABLE, &oldState ), 0 );
+#endif
     PA_ENSURE_SYSTEM( pthread_mutex_lock( &self->mtx ), 0 );
 
 error:
@@ -525,8 +537,9 @@ PaError PaUnixMutex_Unlock( PaUnixMutex* self )
     int oldState;
 
     PA_ENSURE_SYSTEM( pthread_mutex_unlock( &self->mtx ), 0 );
+#if !PJ_ANDROID
     PA_ENSURE_SYSTEM( pthread_setcancelstate( PTHREAD_CANCEL_ENABLE, &oldState ), 0 );
-
+#endif
 error:
     return result;
 }

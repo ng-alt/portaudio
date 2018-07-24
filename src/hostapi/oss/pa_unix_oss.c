@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: pa_unix_oss.c 1385 2008-06-05 21:13:54Z aknudsen $
  * PortAudio Portable Real-Time Audio Library
  * Latest Version at: http://www.portaudio.com
  * OSS implementation by:
@@ -1317,8 +1317,9 @@ static PaError PaOssStream_WaitForFrames( PaOssStream *stream, unsigned long *fr
 
     while( pollPlayback || pollCapture )
     {
+#if !PJ_ANDROID
         pthread_testcancel();
-
+#endif
         /* select may modify the timeout parameter */
         selectTimeval.tv_usec = timeout;
         nfds = 0;
@@ -1341,8 +1342,9 @@ static PaError PaOssStream_WaitForFrames( PaOssStream *stream, unsigned long *fr
             ENSURE_( -1, paUnanticipatedHostError );
         }
         */
+#if !PJ_ANDROID
         pthread_testcancel();
-
+#endif
         if( pollCapture )
         {
             if( FD_ISSET( captureFd, &readFds ) )
@@ -1603,8 +1605,9 @@ static void *PaOSS_AudioThreadProc( void *userData )
 
     while( 1 )
     {
+#if !PJ_ANDROID
         pthread_testcancel();
-
+#endif
         if( stream->callbackStop && callbackResult == paContinue )
         {
             PA_DEBUG(( "Setting callbackResult to paComplete\n" ));
@@ -1630,9 +1633,9 @@ static void *PaOSS_AudioThreadProc( void *userData )
         while( framesAvail > 0 )
         {
             unsigned long frames = framesAvail;
-
+#if !PJ_ANDROID
             pthread_testcancel();
-
+#endif
             PaUtil_BeginCpuLoadMeasurement( &stream->cpuLoadMeasurer );
 
             /* Read data */
